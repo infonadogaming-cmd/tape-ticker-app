@@ -430,12 +430,12 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
 
   // -- RENDER HELPERS --
 
-  const renderWord = (word: string, index: number) => {
+  const renderWord = (word: string, index: number, isFocused: boolean = true) => {
     if (!word) return null;
     let mainColor = "text-white";
     let glow = "";
 
-    if (settings.fixation) {
+    if (settings.fixation && isFocused) {
         const isCapitalized = /^[A-Z]/.test(word);
         if (isCapitalized && index > 0) {
             const prevWord = words[index - 1];
@@ -446,7 +446,11 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
         }
     }
 
-    if (!settings.fixation) return <span className={`${mainColor} font-medium`}>{word}</span>;
+    // Only apply fixation splitting if focused
+    if (!settings.fixation || !isFocused) {
+        // Simple render for context words (or if fixation disabled)
+        return <span className={`${mainColor} font-medium tracking-tight ${!isFocused ? 'opacity-60' : ''}`}>{word}</span>;
+    }
 
     const splitIndex = Math.ceil(word.length / 2);
     const boldPart = word.slice(0, splitIndex);
@@ -494,7 +498,7 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
          </button>
       </div>
 
-      {/* Reticle & Word */}
+      {/* Reticle & Word Ticker */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         {/* Horizontal Line */}
         <div className="absolute w-full max-w-3xl h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -505,11 +509,40 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
         {/* Fixation Indicator */}
         <div className={`absolute h-16 w-1 rounded-full top-1/2 -translate-y-1/2 transition-colors duration-500 ${isBraking ? 'bg-amber-500/50 blur-sm' : 'bg-red-500/20 blur-[1px]'}`} />
 
-        <div 
-          style={{ fontSize: `${fontSize}px` }}
-          className="relative z-10 font-sans whitespace-nowrap drop-shadow-2xl px-8 pb-2"
-        >
-          {renderWord(words[wordIndex], wordIndex)}
+        <div className="relative z-10 w-full flex items-center justify-center gap-8 md:gap-16 px-4">
+            {[-2, -1, 0, 1, 2].map(offset => {
+                const idx = wordIndex + offset;
+                const isCenter = offset === 0;
+                // Spacer for out of bounds
+                if (idx < 0 || idx >= words.length) return <div key={`spacer-${offset}`} className="w-12 h-1 invisible">Spacer</div>;
+                
+                const word = words[idx];
+                
+                // Dynamic styles for the ticker effect
+                // Center: Big, Opaque. Neighbors: Smaller, faded.
+                // We use em/rem relative to base fontSize
+                let scale = isCenter ? 1 : 0.5;
+                if (Math.abs(offset) === 1) scale = 0.65;
+                
+                let opacity = isCenter ? 1 : 0.3;
+                if (Math.abs(offset) === 1) opacity = 0.5;
+                
+                const blur = isCenter ? 'blur-0' : 'blur-[0.5px]';
+
+                return (
+                    <div 
+                        key={`${idx}-${word}`} // Unique key ensures React replaces the slot, effectively "Moving" the word if we had layout anims, but here creates a stable slot update
+                        className={`transition-all duration-150 ease-out flex items-center justify-center ${blur}`}
+                        style={{ 
+                            fontSize: `${fontSize * scale}px`,
+                            opacity: opacity,
+                            transform: `scale(${scale})`, // Redundant but safe
+                        }}
+                    >
+                        {renderWord(word, idx, isCenter)}
+                    </div>
+                );
+            })}
         </div>
       </div>
 
