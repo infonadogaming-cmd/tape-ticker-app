@@ -1,0 +1,5 @@
+{
+  "name": "Tape Ticker Synesthesia",
+  "description": "A physics-driven RSVP (Rapid Serial Visual Presentation) reader designed to eliminate saccadic eye movements. Features 60fps Deadman's Switch interactions.",
+  "requestFramePermissions": []
+}
