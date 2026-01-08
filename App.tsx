@@ -160,7 +160,7 @@ const OnboardingWizard = ({ onComplete }: { onComplete: () => void }) => {
   }, [demoWords.length]);
 
   const nextStep = () => {
-    if (step < 5) setStep(step + 1);
+    if (step < steps.length - 1) setStep(step + 1);
     else {
       // Save preferences to DB
       db.set('user_settings', localSettings);
