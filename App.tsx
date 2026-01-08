@@ -160,7 +160,7 @@ const OnboardingWizard = ({ onComplete }: { onComplete: () => void }) => {
   }, [demoWords.length]);
 
   const nextStep = () => {
-    if (step < 4) setStep(step + 1);
+    if (step < 5) setStep(step + 1);
     else {
       // Save preferences to DB
       db.set('user_settings', localSettings);
@@ -173,6 +173,12 @@ const OnboardingWizard = ({ onComplete }: { onComplete: () => void }) => {
   };
 
   const steps = [
+    {
+      title: "Welcome to Synesthesia",
+      desc: "A new way to read. Let's personalize your experience.",
+      setting: null,
+      demo: false
+    },
     {
       title: "Fixation Anchors",
       desc: "Bolds the start of words to guide your eye, reducing strain.",
@@ -221,8 +227,17 @@ const OnboardingWizard = ({ onComplete }: { onComplete: () => void }) => {
         </div>
 
         {/* Dynamic Content Area */}
-        <div className="flex-1 w-full flex flex-col items-center justify-center relative min-h-[160px] bg-stone-50 rounded-lg border border-stone-100 mb-8 overflow-hidden">
-          {currentStep.demo ? (
+        <div className={`flex-1 w-full flex flex-col items-center justify-center relative min-h-[160px] ${step === 0 ? 'bg-transparent border-none shadow-none' : 'bg-stone-50 rounded-lg border border-stone-100'} mb-8 overflow-hidden`}>
+          {step === 0 ? (
+            <div className="text-center space-y-4">
+              <div className="w-24 h-24 bg-stone-900 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
+                <BookOpen className="w-10 h-10 text-stone-100" />
+              </div>
+              <p className="text-sm font-serif italic text-stone-600 max-w-xs mx-auto">
+                "The book is a machine to think with."
+              </p>
+            </div>
+          ) : currentStep.demo ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <TickerDisplay
                 words={demoWords}
@@ -234,12 +249,12 @@ const OnboardingWizard = ({ onComplete }: { onComplete: () => void }) => {
             </div>
           ) : (
             <div className="flex flex-col gap-4 w-full px-8">
-              {step === 2 && (
+              {step === 3 && (
                 <div className="text-center text-sm text-stone-400 font-serif">
                   (Demonstration requires touch interaction)
                 </div>
               )}
-              {step === 3 && (
+              {step === 4 && (
                 <>
                   <Toggle
                     label="Deadman Switch"
@@ -276,7 +291,7 @@ const OnboardingWizard = ({ onComplete }: { onComplete: () => void }) => {
             onClick={nextStep}
             className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-serif font-bold tracking-widest uppercase transition-all shadow-lg active:scale-[0.98] mt-4"
           >
-            {step === steps.length - 1 ? "Start Reading" : "Continue"}
+            {step === 0 ? "Start Setup" : step === steps.length - 1 ? "Start Reading" : "Continue"}
           </button>
         </div>
 
