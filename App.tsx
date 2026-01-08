@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Settings, X, MousePointer2,
   Library as LibraryIcon, Plus, BookOpen, Trash2, ChevronLeft,
-  Activity, Zap, AlignLeft, AlignRight, CheckCircle2, AlertCircle
+  Activity, Zap, AlignLeft, AlignRight, CheckCircle2, AlertCircle, List
 } from 'lucide-react';
 import * as db from 'idb-keyval';
 import JSZip from 'jszip';
@@ -26,6 +26,12 @@ type BookMeta = {
   progressIndex: number;
   dateAdded: number;
   themeColor?: string; // For the gradient placeholder
+  chapters: { title: string; startIndex: number }[];
+};
+
+type Chapter = {
+  title: string;
+  startIndex: number;
 };
 
 type ViewState = 'ONBOARDING' | 'LIBRARY' | 'READER';
@@ -58,34 +64,112 @@ const cleanText = (text: string): string[] => {
   return lines.split(/\s+/).filter(w => w.length > 0);
 };
 
-const parseFile = async (file: File): Promise<{ title: string; words: string[] }> => {
+const parseFile = async (file: File): Promise<{ title: string; words: string[]; chapters: Chapter[] }> => {
   const isEpub = file.name.endsWith('.epub');
 
   if (isEpub) {
     try {
       const zip = await JSZip.loadAsync(file);
-      let fullText = '';
-      const textFiles: JSZip.JSZipObject[] = [];
-      zip.forEach((relativePath, zipEntry) => {
-        if (relativePath.match(/\.(xhtml|html|xml)$/i) && !relativePath.includes('container.xml')) {
-          textFiles.push(zipEntry);
-        }
+
+      // 1. Find OPF file via container.xml
+      const containerParams = await zip.file("META-INF/container.xml")?.async("string");
+      if (!containerParams) throw new Error("No container.xml found");
+
+      const parser = new DOMParser();
+      const containerDoc = parser.parseFromString(containerParams, "text/xml");
+      const rootfile = containerDoc.querySelector("rootfile");
+      if (!rootfile) throw new Error("No rootfile in container.xml");
+
+      const opfPath = rootfile.getAttribute("full-path");
+      if (!opfPath) throw new Error("No full-path in rootfile");
+
+      // 2. Parse OPF to get Spine and Manifest
+      const opfContent = await zip.file(opfPath)?.async("string");
+      if (!opfContent) throw new Error("OPF file missing");
+
+      const opfDoc = parser.parseFromString(opfContent, "text/xml");
+      const packageTag = opfDoc.querySelector("package");
+      const metadata = opfDoc.querySelector("metadata");
+      const manifest = opfDoc.querySelector("manifest");
+      const spine = opfDoc.querySelector("spine");
+
+      if (!manifest || !spine) throw new Error("Malformed OPF");
+
+      const title = metadata?.querySelector("title")?.textContent || file.name.replace('.epub', '');
+
+      // Map manifest items: id -> href
+      const manifestItems: Record<string, string> = {};
+      manifest.querySelectorAll("item").forEach(item => {
+        const id = item.getAttribute("id");
+        const href = item.getAttribute("href");
+        if (id && href) manifestItems[id] = href;
       });
-      textFiles.sort((a, b) => a.name.localeCompare(b.name));
-      for (const entry of textFiles) {
-        const content = await entry.async('string');
-        fullText += content + ' ';
+
+      // 3. Process Spine (Reading Order)
+      const words: string[] = [];
+      const chapters: Chapter[] = [];
+      const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
+
+      const spineItems = Array.from(spine.querySelectorAll("itemref"));
+
+      for (const itemRef of spineItems) {
+        const idref = itemRef.getAttribute("idref");
+        if (!idref || !manifestItems[idref]) continue;
+
+        let href = manifestItems[idref];
+        // Resolve path relative to OPF
+        // Simple resolution: if href doesn't start with /, append to opfDir
+        const fileContentPath = opfDir + href;
+
+        // Handle URL decoding if needed (some epubs have %20)
+        // and normalize path separators
+        const zipPath = decodeURIComponent(fileContentPath);
+
+        // Find file (ignoring case if possible, but JSZip is case sensitive usually)
+        // We'll try exact match first
+        let fileData = await zip.file(zipPath)?.async("string");
+
+        // Fallback: try to find file with lax matching if exact fails
+        if (!fileData) {
+          const foundObj = zip.file(new RegExp(zipPath.replace(/\//g, '\/'), 'i'))[0];
+          if (foundObj) fileData = await foundObj.async("string");
+        }
+
+        if (fileData) {
+          const doc = parser.parseFromString(fileData, "text/html"); // Parsing as HTML handles XHTML well enough usually
+
+          // Extract Title if possible
+          let chapterTitle = doc.querySelector("title")?.textContent ||
+            doc.querySelector("h1")?.textContent ||
+            doc.querySelector("h2")?.textContent;
+
+          if (!chapterTitle) chapterTitle = `Section ${chapters.length + 1}`;
+
+          // Clean Text
+          const textContent = doc.body?.textContent || doc.documentElement.textContent || "";
+          const clean = cleanText(textContent);
+
+          if (clean.length > 0) {
+            chapters.push({
+              title: chapterTitle.trim().substring(0, 60), // Limit length
+              startIndex: words.length
+            });
+            words.push(...clean);
+          }
+        }
       }
-      return { title: file.name.replace('.epub', ''), words: cleanText(fullText) };
+
+      return { title, words, chapters };
+
     } catch (e) {
       console.error("EPUB Parse Error", e);
-      alert("Could not parse EPUB structure. Falling back to raw text.");
+      alert("Advanced parsing failed. Falling back to simple mode.");
       const text = await file.text();
-      return { title: file.name, words: cleanText(text) };
+      return { title: file.name, words: cleanText(text), chapters: [] };
     }
   } else {
     const text = await file.text();
-    return { title: file.name.replace(/\.[^/.]+$/, ""), words: cleanText(text) };
+    return { title: file.name.replace(/\.[^/.]+$/, ""), words: cleanText(text), chapters: [] };
   }
 };
 
@@ -407,10 +491,17 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
   // UI State
   const [wordIndex, setWordIndex] = useState(book.progressIndex || 0);
   const [isPlaying, setIsPlaying] = useState(false);
+
   const [showSettings, setShowSettings] = useState(false);
+  const [showChapters, setShowChapters] = useState(false);
   const [displayWPM, setDisplayWPM] = useState(INITIAL_SETTINGS.wpm); // The number shown on HUD
   const [fontSize, setFontSize] = useState(INITIAL_SETTINGS.fontSize);
   const [isBraking, setIsBraking] = useState(false); // For Amber visual feedback
+
+  // Computed: Current Chapter
+  const currentChapter = book.chapters.length > 0
+    ? book.chapters.slice().reverse().find(c => c.startIndex <= wordIndex)
+    : null;
 
   // -- Engine Refs --
   // We use refs for the render loop to avoid React render cycle latency
@@ -660,13 +751,25 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
           {settings.southpaw ? <ChevronLeft className="w-5 h-5 rotate-180" /> : null}
         </button>
 
-        <button
-          className="pointer-events-auto p-3 rounded-full bg-stone-900/5 hover:bg-stone-900/10 text-stone-600 hover:text-stone-900 transition-all border border-stone-900/5 hover:border-stone-900/20"
-          onClick={(e) => { e.stopPropagation(); setShowSettings(true); }}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <Settings className="w-6 h-6" />
-        </button>
+        <div className="flex items-center gap-2 pointer-events-auto">
+          {book.chapters.length > 0 && (
+            <button
+              className="p-3 rounded-full bg-stone-900/5 hover:bg-stone-900/10 text-stone-600 hover:text-stone-900 transition-all border border-stone-900/5 hover:border-stone-900/20"
+              onClick={(e) => { e.stopPropagation(); setShowChapters(true); }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <List className="w-6 h-6" />
+            </button>
+          )}
+
+          <button
+            className="pointer-events-auto p-3 rounded-full bg-stone-900/5 hover:bg-stone-900/10 text-stone-600 hover:text-stone-900 transition-all border border-stone-900/5 hover:border-stone-900/20"
+            onClick={(e) => { e.stopPropagation(); setShowSettings(true); }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <Settings className="w-6 h-6" />
+          </button>
+        </div>
       </div>
 
       {/* Reticle & Word Ticker */}
@@ -691,6 +794,12 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
             {displayWPM}
           </span>
           <span className="text-xs font-serif italic text-stone-400">wpm</span>
+          {currentChapter && (
+            <div className="mt-4 max-w-[200px]">
+              <p className="text-[10px] font-bold text-stone-900 uppercase tracking-widest opacity-40 mb-1">Chapter</p>
+              <p className="text-sm font-serif italic text-stone-600 leading-tight">{currentChapter.title}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -774,6 +883,60 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
                   value={settings.southpaw}
                   onChange={() => setSettings(s => ({ ...s, southpaw: !s.southpaw }))}
                 />
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Chapters Modal */}
+      {
+        showChapters && (
+          <div
+            className="absolute inset-0 z-50 flex items-center justify-center bg-stone-900/20 backdrop-blur-sm p-6"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className="w-full max-w-md bg-[#fcfbf9] border border-stone-200 rounded-sm shadow-xl flex flex-col max-h-[80vh] relative overflow-hidden">
+              {/* Spine accent */}
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-800/80" />
+
+              <div className="flex items-center justify-between p-6 border-b border-stone-100 pl-8">
+                <h2 className="text-2xl font-serif font-bold text-stone-900">Contents</h2>
+                <button
+                  onClick={() => setShowChapters(false)}
+                  className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-stone-500" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-2 pl-6">
+                {book.chapters.map((chapter, i) => {
+                  const isActive = currentChapter === chapter;
+                  return (
+                    <button
+                      key={i}
+                      className={`w-full text-left p-4 rounded-lg transition-all group ${isActive ? 'bg-stone-100' : 'hover:bg-stone-50'}`}
+                      onClick={() => {
+                        setWordIndex(chapter.startIndex);
+                        engine.current.wordIndex = chapter.startIndex;
+                        engine.current.isPlaying = false; // Pause on jump
+                        setIsPlaying(false);
+                        setShowChapters(false);
+                        onUpdateProgress(book.id, chapter.startIndex);
+                      }}
+                    >
+                      <div className="flex justify-between items-baseline mb-1">
+                        <span className={`font-serif text-lg leading-tight ${isActive ? 'font-bold text-stone-900' : 'text-stone-700 group-hover:text-stone-900'}`}>
+                          {chapter.title}
+                        </span>
+                        <span className="text-xs font-mono text-stone-400">
+                          {Math.floor((chapter.startIndex / words.length) * 100)}%
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -944,7 +1107,8 @@ export default function App() {
             wordCount: demoWords.length,
             progressIndex: 0,
             dateAdded: Date.now(),
-            themeColor: 'from-cyan-900 to-slate-900'
+            themeColor: 'from-cyan-900 to-slate-900',
+            chapters: []
           };
           await db.set('library', [demoBook]);
           await db.set('content_demo', demoWords);
@@ -976,7 +1140,7 @@ export default function App() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       try {
-        const { title, words } = await parseFile(file);
+        const { title, words, chapters } = await parseFile(file);
         const id = `book_${Date.now()}_${i}`;
         const meta: BookMeta = {
           id,
@@ -984,7 +1148,8 @@ export default function App() {
           wordCount: words.length,
           progressIndex: 0,
           dateAdded: Date.now(),
-          themeColor: getRandomGradient(id)
+          themeColor: getRandomGradient(id),
+          chapters: chapters || []
         };
         await db.set(`content_${id}`, words);
         newBooks.push(meta);
