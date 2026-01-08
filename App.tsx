@@ -140,55 +140,146 @@ const Toggle = ({ value, onChange, label, subLabel }: { value: boolean, onChange
 
 // -- ONBOARDING --
 
-const OnboardingOverlay = ({ onComplete }: { onComplete: () => void }) => {
+// -- ONBOARDING WIZARD --
+
+const DEMO_SENTENCE = "The sky above the port was the color of television, tuned to a dead channel.";
+
+const OnboardingWizard = ({ onComplete }: { onComplete: () => void }) => {
+  const [step, setStep] = useState(0);
+  const [localSettings, setLocalSettings] = useState<AppSettings>(INITIAL_SETTINGS);
+
+  // Ticker demo state
+  const [demoIndex, setDemoIndex] = useState(0);
+  const demoWords = useRef(cleanText(DEMO_SENTENCE)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDemoIndex(prev => (prev + 1) % demoWords.length);
+    }, 400); // Fixed slow speed for demo
+    return () => clearInterval(interval);
+  }, [demoWords.length]);
+
+  const nextStep = () => {
+    if (step < 4) setStep(step + 1);
+    else {
+      // Save preferences to DB
+      db.set('user_settings', localSettings);
+      onComplete();
+    }
+  };
+
+  const toggleSetting = (key: keyof AppSettings) => {
+    setLocalSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const steps = [
+    {
+      title: "Fixation Anchors",
+      desc: "Bolds the start of words to guide your eye, reducing strain.",
+      setting: "fixation",
+      demo: true
+    },
+    {
+      title: "Cadence Mode",
+      desc: "Slows down for punctuation to create a natural reading rhythm.",
+      setting: "cadence",
+      demo: true
+    },
+    {
+      title: "Auto-Rev Engine",
+      desc: "Automatically returns to your target speed after slowing down.",
+      setting: "autoRev",
+      demo: false
+    },
+    {
+      title: "Control Scheme",
+      desc: "Customize how you interact with the reader.",
+      setting: null, // Multiple toggles
+      demo: false
+    }
+  ];
+
+  const currentStep = steps[step];
+
   return (
-    <div className="fixed inset-0 z-[100] bg-[#fdfbf7] flex items-center justify-center p-8">
+    <div className="fixed inset-0 z-[100] bg-[#fdfbf7] flex items-center justify-center p-6">
       {/* Paper Texture */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-40 pointer-events-none mix-blend-multiply" />
+      <div className="absolute inset-0 bg-[#e3e0d0] opacity-20 pointer-events-none" />
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-60 pointer-events-none mix-blend-multiply" />
 
-      <div className="max-w-md w-full space-y-12 relative z-10">
-        <div className="text-center space-y-2">
-          <h1 className="text-5xl font-serif font-black tracking-tight text-stone-900 mb-4">
-            System Boot
-          </h1>
-          <div className="h-px w-24 bg-red-800 mx-auto" />
-          <p className="text-xs font-serif italic text-stone-500 tracking-widest uppercase mt-4">Tape Ticker Synesthesia</p>
+      <div className="max-w-xl w-full relative z-10 flex flex-col items-center bg-white border border-stone-200 shadow-2xl rounded-sm p-8 min-h-[500px]">
+        {/* Progress Bar */}
+        <div className="w-full flex gap-2 mb-8">
+          {steps.map((_, i) => (
+            <div key={i} className={`h-1 flex-1 rounded-full ${i <= step ? 'bg-stone-800' : 'bg-stone-200'}`} />
+          ))}
         </div>
 
-        <div className="space-y-8 bg-white border border-stone-200 p-8 shadow-xl rounded-sm">
-          <div className="flex items-start gap-6">
-            <div className="p-4 rounded-full bg-stone-100 border border-stone-200 shrink-0">
-              <MousePointer2 className="w-5 h-5 text-stone-700" />
-            </div>
-            <div>
-              <h3 className="text-lg font-serif font-bold text-stone-900 mb-1">Deadman Interface</h3>
-              <p className="text-stone-600 font-serif text-sm leading-relaxed">
-                Press and <strong className="text-stone-900 font-bold">hold</strong> to read.
-                Lift to pause.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-6">
-            <div className="p-4 rounded-full bg-stone-100 border border-stone-200 shrink-0">
-              <Activity className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-serif font-bold text-stone-900 mb-1">Analog Cruise Control</h3>
-              <p className="text-stone-600 font-serif text-sm leading-relaxed">
-                Drag <strong className="text-stone-900 font-bold">Left</strong> to brake, <strong className="text-stone-900 font-bold">Right</strong> to accelerate.
-                Engine auto-revs back to speed.
-              </p>
-            </div>
-          </div>
+        <div className="text-center space-y-4 mb-8">
+          <h2 className="text-3xl font-serif font-black text-stone-900">{currentStep.title}</h2>
+          <p className="text-stone-500 font-serif italic">{currentStep.desc}</p>
         </div>
 
-        <button
-          onClick={onComplete}
-          className="w-full py-4 bg-stone-900 hover:bg-stone-800 text-[#fdfbf7] font-serif font-bold tracking-widest uppercase text-sm shadow-xl transition-all active:scale-[0.98]"
-        >
-          Initialize Reader
-        </button>
+        {/* Dynamic Content Area */}
+        <div className="flex-1 w-full flex flex-col items-center justify-center relative min-h-[160px] bg-stone-50 rounded-lg border border-stone-100 mb-8 overflow-hidden">
+          {currentStep.demo ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <TickerDisplay
+                words={demoWords}
+                wordIndex={demoIndex}
+                fontSize={32}
+                isBraking={false}
+                settings={localSettings}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4 w-full px-8">
+              {step === 2 && (
+                <div className="text-center text-sm text-stone-400 font-serif">
+                  (Demonstration requires touch interaction)
+                </div>
+              )}
+              {step === 3 && (
+                <>
+                  <Toggle
+                    label="Deadman Switch"
+                    subLabel="Hold to read, release to pause."
+                    value={localSettings.deadman}
+                    onChange={() => toggleSetting('deadman')}
+                  />
+                  <Toggle
+                    label="Southpaw Mode"
+                    subLabel="Inverts UI for left-handed use."
+                    value={localSettings.southpaw}
+                    onChange={() => toggleSetting('southpaw')}
+                  />
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Controls */}
+        <div className="w-full space-y-4">
+          {currentStep.setting && (
+            <div className="flex justify-center">
+              <button
+                onClick={() => toggleSetting(currentStep.setting as keyof AppSettings)}
+                className={`px-8 py-3 rounded-full border transition-all font-bold tracking-wide ${localSettings[currentStep.setting as keyof AppSettings] ? 'bg-stone-900 text-white border-stone-900' : 'bg-transparent text-stone-500 border-stone-300'}`}
+              >
+                {localSettings[currentStep.setting as keyof AppSettings] ? 'ENABLED' : 'DISABLED'}
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={nextStep}
+            className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-serif font-bold tracking-widest uppercase transition-all shadow-lg active:scale-[0.98] mt-4"
+          >
+            {step === steps.length - 1 ? "Start Reading" : "Continue"}
+          </button>
+        </div>
+
       </div>
     </div>
   );
@@ -203,6 +294,98 @@ type ReaderProps = {
   setSettings: React.Dispatch<React.SetStateAction<AppSettings>>;
   onBack: () => void;
   onUpdateProgress: (id: string, index: number) => void;
+};
+
+// -- SHARED COMPONENTS --
+
+const TickerDisplay = ({
+  words,
+  wordIndex,
+  fontSize,
+  isBraking,
+  settings
+}: {
+  words: string[],
+  wordIndex: number,
+  fontSize: number,
+  isBraking: boolean,
+  settings: AppSettings
+}) => {
+
+  const renderWord = (word: string, index: number, isFocused: boolean = true) => {
+    if (!word) return null;
+    let mainColor = "text-stone-900"; // Dark Ink
+    let glow = "";
+
+    if (settings.fixation && isFocused) {
+      const isCapitalized = /^[A-Z]/.test(word);
+      if (isCapitalized && index > 0) {
+        const prevWord = words[index - 1];
+        if (!/[.?!]$/.test(prevWord)) {
+          mainColor = "text-cyan-600"; // Slightly darker cyan for print feel
+          glow = ""; // No glow on paper
+        }
+      }
+    }
+
+    // Only apply fixation splitting if focused
+    if (!settings.fixation || !isFocused) {
+      return <span className={`${mainColor} font-serif tracking-tight ${!isFocused ? 'opacity-40' : ''}`}>{word}</span>;
+    }
+
+    const splitIndex = Math.ceil(word.length / 2);
+    const boldPart = word.slice(0, splitIndex);
+    const lightPart = word.slice(splitIndex);
+
+    return (
+      <span className={`inline-block tracking-normal ${glow} transition-all duration-200 font-serif`}>
+        <span className={`${mainColor} font-black`}>{boldPart}</span>
+        <span className={`${mainColor} font-medium opacity-80`}>{lightPart}</span>
+      </span>
+    );
+  };
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      {/* Horizontal Guide Line (Subtle Pencil Line) */}
+      <div className="absolute w-full max-w-3xl h-px bg-stone-900/5" />
+
+      {/* Vertical Notch (Center) */}
+      <div className="absolute h-4 w-px bg-stone-900/10 top-1/2 -translate-y-1/2" />
+
+      {/* Focus Highlight (Subtle Highlight Marker) */}
+      <div className={`absolute h-12 w-1 rounded-full top-1/2 -translate-y-1/2 transition-colors duration-500 ${isBraking ? 'bg-amber-400/30' : 'bg-transparent'}`} />
+
+      <div className="relative z-10 w-full flex items-center justify-center gap-8 md:gap-16 px-4">
+        {[-2, -1, 0, 1, 2].map(offset => {
+          const idx = wordIndex + offset;
+          const isCenter = offset === 0;
+          // Spacer for out of bounds
+          if (idx < 0 || idx >= words.length) return <div key={`spacer-${offset}`} className="w-12 h-1 invisible">Space</div>;
+
+          const word = words[idx];
+
+          // Ticker Logic: Paperback Flow
+          // Less aggressive scaling for a "reading line" feel
+          let scale = isCenter ? 1 : 0.85; // Flattens the curve
+          let opacity = isCenter ? 1 : 0.4;
+
+          return (
+            <div
+              key={`${idx}-${word}`}
+              className={`transition-all duration-200 ease-out flex items-center justify-center`}
+              style={{
+                fontSize: `${fontSize * scale}px`,
+                opacity: opacity,
+              }}
+            >
+              {renderWord(word, idx, isCenter)}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 };
 
 const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgress }: ReaderProps) => {
@@ -434,39 +617,6 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
 
   // -- RENDER HELPERS --
 
-  const renderWord = (word: string, index: number, isFocused: boolean = true) => {
-    if (!word) return null;
-    let mainColor = "text-stone-900"; // Dark Ink
-    let glow = "";
-
-    if (settings.fixation && isFocused) {
-      const isCapitalized = /^[A-Z]/.test(word);
-      if (isCapitalized && index > 0) {
-        const prevWord = words[index - 1];
-        if (!/[.?!]$/.test(prevWord)) {
-          mainColor = "text-cyan-600"; // Slightly darker cyan for print feel
-          glow = ""; // No glow on paper
-        }
-      }
-    }
-
-    // Only apply fixation splitting if focused
-    if (!settings.fixation || !isFocused) {
-      return <span className={`${mainColor} font-serif tracking-tight ${!isFocused ? 'opacity-40' : ''}`}>{word}</span>;
-    }
-
-    const splitIndex = Math.ceil(word.length / 2);
-    const boldPart = word.slice(0, splitIndex);
-    const lightPart = word.slice(splitIndex);
-
-    return (
-      <span className={`inline-block tracking-normal ${glow} transition-all duration-200 font-serif`}>
-        <span className={`${mainColor} font-black`}>{boldPart}</span>
-        <span className={`${mainColor} font-medium opacity-80`}>{lightPart}</span>
-      </span>
-    );
-  };
-
   const progress = (wordIndex / words.length) * 100;
 
   return (
@@ -479,7 +629,7 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
     >
       {/* Paper Texture & Grain */}
       <div className="absolute inset-0 bg-[#e3e0d0] opacity-10 pointer-events-none" />
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-40 pointer-events-none mix-blend-multiply" />
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-60 pointer-events-none mix-blend-multiply" />
 
       {/* Subtle Vignette */}
       <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-stone-400/20 pointer-events-none" />
@@ -505,45 +655,13 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
       </div>
 
       {/* Reticle & Word Ticker */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {/* Horizontal Guide Line (Subtle Pencil Line) */}
-        <div className="absolute w-full max-w-3xl h-px bg-stone-900/5" />
-
-        {/* Vertical Notch (Center) */}
-        <div className="absolute h-4 w-px bg-stone-900/10 top-1/2 -translate-y-1/2" />
-
-        {/* Focus Highlight (Subtle Highlight Marker) */}
-        <div className={`absolute h-12 w-1 rounded-full top-1/2 -translate-y-1/2 transition-colors duration-500 ${isBraking ? 'bg-amber-400/30' : 'bg-transparent'}`} />
-
-        <div className="relative z-10 w-full flex items-center justify-center gap-8 md:gap-16 px-4">
-          {[-2, -1, 0, 1, 2].map(offset => {
-            const idx = wordIndex + offset;
-            const isCenter = offset === 0;
-            // Spacer for out of bounds
-            if (idx < 0 || idx >= words.length) return <div key={`spacer-${offset}`} className="w-12 h-1 invisible">Space</div>;
-
-            const word = words[idx];
-
-            // Ticker Logic: Paperback Flow
-            // Less aggressive scaling for a "reading line" feel
-            let scale = isCenter ? 1 : 0.85; // Flattens the curve
-            let opacity = isCenter ? 1 : 0.4;
-
-            return (
-              <div
-                key={`${idx}-${word}`}
-                className={`transition-all duration-200 ease-out flex items-center justify-center`}
-                style={{
-                  fontSize: `${fontSize * scale}px`,
-                  opacity: opacity,
-                }}
-              >
-                {renderWord(word, idx, isCenter)}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <TickerDisplay
+        words={words}
+        wordIndex={wordIndex}
+        fontSize={fontSize}
+        isBraking={isBraking}
+        settings={settings}
+      />
 
       {/* HUD Stats */}
       <div className={`absolute top-24 sm:top-8 ${settings.southpaw ? 'right-6 text-right' : 'left-6 text-left'} pointer-events-none transition-all duration-300 ${isPlaying ? 'opacity-100' : 'opacity-40'}`}>
@@ -562,16 +680,18 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
       </div>
 
       {/* Deadman Hint */}
-      {!isPlaying && !showSettings && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="mt-64 flex flex-col items-center gap-4 opacity-40 animate-pulse-slow">
-            <MousePointer2 className="w-6 h-6 text-stone-400" />
-            <span className="text-xs font-serif italic text-stone-400">
-              {settings.deadman ? "Touch & Hold to Read" : "Tap to Begin"}
-            </span>
+      {
+        !isPlaying && !showSettings && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="mt-64 flex flex-col items-center gap-4 opacity-40 animate-pulse-slow">
+              <MousePointer2 className="w-6 h-6 text-stone-400" />
+              <span className="text-xs font-serif italic text-stone-400">
+                {settings.deadman ? "Touch & Hold to Read" : "Tap to Begin"}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Progress Bar (Ink Style) */}
       <div className="absolute bottom-10 left-8 right-8 pointer-events-none">
@@ -588,61 +708,63 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
       </div>
 
       {/* Settings Modal (Light Theme) */}
-      {showSettings && (
-        <div
-          className="absolute inset-0 z-50 flex items-center justify-center bg-stone-900/20 backdrop-blur-sm p-6"
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <div className="w-full max-w-md bg-[#fcfbf9] border border-stone-200 rounded-sm shadow-xl p-8 relative overflow-hidden">
-            {/* Spine accent */}
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-800/80" />
+      {
+        showSettings && (
+          <div
+            className="absolute inset-0 z-50 flex items-center justify-center bg-stone-900/20 backdrop-blur-sm p-6"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className="w-full max-w-md bg-[#fcfbf9] border border-stone-200 rounded-sm shadow-xl p-8 relative overflow-hidden">
+              {/* Spine accent */}
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-800/80" />
 
-            <div className="relative z-10 flex items-center justify-between mb-8 pl-4">
-              <h2 className="text-2xl font-serif font-bold text-stone-900">Preferences</h2>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="p-2 hover:bg-stone-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-stone-500" />
-              </button>
-            </div>
+              <div className="relative z-10 flex items-center justify-between mb-8 pl-4">
+                <h2 className="text-2xl font-serif font-bold text-stone-900">Preferences</h2>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-stone-500" />
+                </button>
+              </div>
 
-            <div className="relative z-10 space-y-1 pl-4">
-              <Toggle
-                label="Cadence Mode"
-                subLabel="Slows for punctuation."
-                value={settings.cadence}
-                onChange={() => setSettings(s => ({ ...s, cadence: !s.cadence }))}
-              />
-              <Toggle
-                label="Fixation Anchor"
-                subLabel="Bold leads for focus."
-                value={settings.fixation}
-                onChange={() => setSettings(s => ({ ...s, fixation: !s.fixation }))}
-              />
-              <Toggle
-                label="Auto-Rev Engine"
-                subLabel="Adaptive speed control."
-                value={settings.autoRev}
-                onChange={() => setSettings(s => ({ ...s, autoRev: !s.autoRev }))}
-              />
-              <Toggle
-                label="Deadman Switch"
-                subLabel="Hold to read interaction."
-                value={settings.deadman}
-                onChange={() => setSettings(s => ({ ...s, deadman: !s.deadman }))}
-              />
-              <Toggle
-                label="Southpaw Mode"
-                subLabel="Left-handed interface."
-                value={settings.southpaw}
-                onChange={() => setSettings(s => ({ ...s, southpaw: !s.southpaw }))}
-              />
+              <div className="relative z-10 space-y-1 pl-4">
+                <Toggle
+                  label="Cadence Mode"
+                  subLabel="Slows for punctuation."
+                  value={settings.cadence}
+                  onChange={() => setSettings(s => ({ ...s, cadence: !s.cadence }))}
+                />
+                <Toggle
+                  label="Fixation Anchor"
+                  subLabel="Bold leads for focus."
+                  value={settings.fixation}
+                  onChange={() => setSettings(s => ({ ...s, fixation: !s.fixation }))}
+                />
+                <Toggle
+                  label="Auto-Rev Engine"
+                  subLabel="Adaptive speed control."
+                  value={settings.autoRev}
+                  onChange={() => setSettings(s => ({ ...s, autoRev: !s.autoRev }))}
+                />
+                <Toggle
+                  label="Deadman Switch"
+                  subLabel="Hold to read interaction."
+                  value={settings.deadman}
+                  onChange={() => setSettings(s => ({ ...s, deadman: !s.deadman }))}
+                />
+                <Toggle
+                  label="Southpaw Mode"
+                  subLabel="Left-handed interface."
+                  value={settings.southpaw}
+                  onChange={() => setSettings(s => ({ ...s, southpaw: !s.southpaw }))}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 
@@ -899,7 +1021,7 @@ export default function App() {
 
   return (
     <>
-      {view === 'ONBOARDING' && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
+      {view === 'ONBOARDING' && <OnboardingWizard onComplete={handleOnboardingComplete} />}
 
       {view === 'LIBRARY' && (
         <LibraryView
