@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  Settings, X, MousePointer2, 
+import {
+  Settings, X, MousePointer2,
   Library as LibraryIcon, Plus, BookOpen, Trash2, ChevronLeft,
   Activity, Zap, AlignLeft, AlignRight, CheckCircle2, AlertCircle
 } from 'lucide-react';
@@ -60,7 +60,7 @@ const cleanText = (text: string): string[] => {
 
 const parseFile = async (file: File): Promise<{ title: string; words: string[] }> => {
   const isEpub = file.name.endsWith('.epub');
-  
+
   if (isEpub) {
     try {
       const zip = await JSZip.loadAsync(file);
@@ -68,7 +68,7 @@ const parseFile = async (file: File): Promise<{ title: string; words: string[] }
       const textFiles: JSZip.JSZipObject[] = [];
       zip.forEach((relativePath, zipEntry) => {
         if (relativePath.match(/\.(xhtml|html|xml)$/i) && !relativePath.includes('container.xml')) {
-            textFiles.push(zipEntry);
+          textFiles.push(zipEntry);
         }
       });
       textFiles.sort((a, b) => a.name.localeCompare(b.name));
@@ -108,7 +108,7 @@ const getRandomGradient = (id: string) => {
 
 const getWordWeight = (word: string) => {
   if (!word) return 1;
-  const cleanWord = word.replace(/[^a-zA-Z0-9.,!?;:]/g, ''); 
+  const cleanWord = word.replace(/[^a-zA-Z0-9.,!?;:]/g, '');
   const lastChar = word.slice(-1);
   if (['.', '!', '?'].includes(lastChar)) return 2.2;
   if ([',', ';', ':'].includes(lastChar)) return 1.5;
@@ -120,19 +120,19 @@ const getWordWeight = (word: string) => {
 // -- COMPONENTS --
 
 const Toggle = ({ value, onChange, label, subLabel }: { value: boolean, onChange: () => void, label: string, subLabel?: string }) => (
-  <div 
-    className="flex items-center justify-between py-4 cursor-pointer group select-none border-b border-white/5 last:border-0"
+  <div
+    className="flex items-center justify-between py-4 cursor-pointer group select-none border-b border-stone-200 last:border-0"
     onClick={(e) => { e.stopPropagation(); onChange(); }}
   >
     <div className="flex flex-col">
-      <span className="text-sm font-medium text-white/90 group-hover:text-white transition-colors tracking-wide">
+      <span className="text-sm font-serif font-bold text-stone-800 group-hover:text-stone-900 transition-colors tracking-wide">
         {label}
       </span>
-      {subLabel && <span className="text-[10px] text-white/40 font-mono mt-1">{subLabel}</span>}
+      {subLabel && <span className="text-[10px] text-stone-500 font-serif italic mt-1">{subLabel}</span>}
     </div>
-    <div className={`relative w-11 h-6 rounded-full transition-colors duration-300 ease-out ${value ? 'bg-cyan-500' : 'bg-white/10'}`}>
-      <div 
-        className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow-lg transform transition-transform duration-300 cubic-bezier(0.34, 1.56, 0.64, 1) ${value ? 'translate-x-5' : 'translate-x-0'}`} 
+    <div className={`relative w-11 h-6 rounded-full transition-colors duration-300 ease-out border border-stone-200 ${value ? 'bg-cyan-600' : 'bg-stone-200'}`}>
+      <div
+        className={`absolute top-0.5 left-0.5 bg-white w-[18px] h-[18px] rounded-full shadow-sm transform transition-transform duration-300 cubic-bezier(0.34, 1.56, 0.64, 1) ${value ? 'translate-x-5' : 'translate-x-0'}`}
       />
     </div>
   </div>
@@ -142,48 +142,52 @@ const Toggle = ({ value, onChange, label, subLabel }: { value: boolean, onChange
 
 const OnboardingOverlay = ({ onComplete }: { onComplete: () => void }) => {
   return (
-    <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-8">
-      <div className="max-w-md w-full space-y-12">
+    <div className="fixed inset-0 z-[100] bg-[#fdfbf7] flex items-center justify-center p-8">
+      {/* Paper Texture */}
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-40 pointer-events-none mix-blend-multiply" />
+
+      <div className="max-w-md w-full space-y-12 relative z-10">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-br from-white to-white/40 bg-clip-text text-transparent">
-            SYSTEM BOOT
+          <h1 className="text-5xl font-serif font-black tracking-tight text-stone-900 mb-4">
+            System Boot
           </h1>
-          <p className="text-sm font-mono text-cyan-400/60 tracking-[0.2em] uppercase">Tape Ticker Synesthesia</p>
+          <div className="h-px w-24 bg-red-800 mx-auto" />
+          <p className="text-xs font-serif italic text-stone-500 tracking-widest uppercase mt-4">Tape Ticker Synesthesia</p>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-8 bg-white border border-stone-200 p-8 shadow-xl rounded-sm">
           <div className="flex items-start gap-6">
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 shrink-0">
-              <MousePointer2 className="w-6 h-6 text-cyan-400" />
+            <div className="p-4 rounded-full bg-stone-100 border border-stone-200 shrink-0">
+              <MousePointer2 className="w-5 h-5 text-stone-700" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white mb-1">Deadman Interface</h3>
-              <p className="text-white/50 text-sm leading-relaxed">
-                Press and <strong className="text-white">hold</strong> anywhere to stream text. 
-                Lift your finger to pause instantly and rewind for context.
+              <h3 className="text-lg font-serif font-bold text-stone-900 mb-1">Deadman Interface</h3>
+              <p className="text-stone-600 font-serif text-sm leading-relaxed">
+                Press and <strong className="text-stone-900 font-bold">hold</strong> to read.
+                Lift to pause.
               </p>
             </div>
           </div>
 
           <div className="flex items-start gap-6">
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 shrink-0">
-              <Activity className="w-6 h-6 text-amber-400" />
+            <div className="p-4 rounded-full bg-stone-100 border border-stone-200 shrink-0">
+              <Activity className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white mb-1">Analog Cruise Control</h3>
-              <p className="text-white/50 text-sm leading-relaxed">
-                While holding, drag <strong className="text-white">Left</strong> to brake or <strong className="text-white">Right</strong> to accelerate. 
-                Slow down for tricky parts; the engine will auto-rev back to speed.
+              <h3 className="text-lg font-serif font-bold text-stone-900 mb-1">Analog Cruise Control</h3>
+              <p className="text-stone-600 font-serif text-sm leading-relaxed">
+                Drag <strong className="text-stone-900 font-bold">Left</strong> to brake, <strong className="text-stone-900 font-bold">Right</strong> to accelerate.
+                Engine auto-revs back to speed.
               </p>
             </div>
           </div>
         </div>
 
-        <button 
+        <button
           onClick={onComplete}
-          className="w-full py-4 bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide rounded-xl transition-all active:scale-[0.98] shadow-[0_0_30px_-5px_rgba(6,182,212,0.5)]"
+          className="w-full py-4 bg-stone-900 hover:bg-stone-800 text-[#fdfbf7] font-serif font-bold tracking-widest uppercase text-sm shadow-xl transition-all active:scale-[0.98]"
         >
-          INITIALIZE
+          Initialize Reader
         </button>
       </div>
     </div>
@@ -218,11 +222,11 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
     accumulatedTime: 0,
     lastFrameTime: 0,
     wordIndex: book.progressIndex || 0,
-    
+
     // Speed Physics
     targetWPM: INITIAL_SETTINGS.wpm, // The "Cruise Control" set speed
     currentWPM: 0, // The actual instantaneous speed (starts at 0, ramps up)
-    
+
     // Auto-Rev Logic
     isDragging: false,
     lastDragTime: 0,
@@ -240,7 +244,7 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
 
   const loop = useCallback((timestamp: number) => {
     const state = engine.current;
-    
+
     if (!state.lastFrameTime) state.lastFrameTime = timestamp;
     const deltaTime = timestamp - state.lastFrameTime;
     state.lastFrameTime = timestamp;
@@ -260,17 +264,17 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
         // Wait for delay
         const timeSinceDrag = timestamp - state.lastDragTime;
         if (timeSinceDrag > AUTO_REV_DELAY_MS) {
-            // Revving back up
-            const revProgress = Math.min((timeSinceDrag - AUTO_REV_DELAY_MS) / AUTO_REV_DURATION_MS, 1.0);
-            const revEase = 1 - Math.pow(1 - revProgress, 3); // Cubic Ease Out
-            
-            // Interpolate from the low speed back to the high speed
-            effectiveTarget = state.targetWPM + (state.dragStartWPM - state.targetWPM) * revEase;
-            
-            // If we are basically there, snap it
-            if (revProgress >= 0.99) {
-                state.targetWPM = state.dragStartWPM; // Restore full cruise speed
-            }
+          // Revving back up
+          const revProgress = Math.min((timeSinceDrag - AUTO_REV_DELAY_MS) / AUTO_REV_DURATION_MS, 1.0);
+          const revEase = 1 - Math.pow(1 - revProgress, 3); // Cubic Ease Out
+
+          // Interpolate from the low speed back to the high speed
+          effectiveTarget = state.targetWPM + (state.dragStartWPM - state.targetWPM) * revEase;
+
+          // If we are basically there, snap it
+          if (revProgress >= 0.99) {
+            state.targetWPM = state.dragStartWPM; // Restore full cruise speed
+          }
         }
       }
 
@@ -279,12 +283,12 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
       // but we still want smooth start.
       // Simplify: state.currentWPM is used for timing. 
       // effectiveTarget is where we WANT to be.
-      
+
       let finalWPM = Math.floor(effectiveTarget * rampEase);
-      
+
       state.currentWPM = finalWPM;
       setDisplayWPM(finalWPM);
-      
+
       // Update Braking Visual State (React State update throttled naturally by React batching, but we can debounce if needed)
       // Visual feedback: Amber if we are significantly below our "Cruise Setting" (dragStartWPM)
       const isRevvingOrBraking = state.dragStartWPM > 0 && effectiveTarget < state.dragStartWPM;
@@ -295,7 +299,7 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
         let msForThisWord = 60000 / state.currentWPM;
 
         if (settings.cadence) {
-           msForThisWord *= getWordWeight(currentWord);
+          msForThisWord *= getWordWeight(currentWord);
         }
 
         state.accumulatedTime += deltaTime;
@@ -303,12 +307,12 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
         if (state.accumulatedTime >= msForThisWord) {
           state.accumulatedTime -= msForThisWord;
           const nextIndex = state.wordIndex + 1;
-          
+
           if (nextIndex >= words.length) {
-             stopPlayback();
+            stopPlayback();
           } else {
-             state.wordIndex = nextIndex;
-             setWordIndex(nextIndex);
+            state.wordIndex = nextIndex;
+            setWordIndex(nextIndex);
           }
         }
       }
@@ -320,7 +324,7 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
     }
 
     animationFrameId.current = requestAnimationFrame(loop);
-  }, [words, settings.cadence, settings.autoRev, isBraking]); 
+  }, [words, settings.cadence, settings.autoRev, isBraking]);
 
   useEffect(() => {
     animationFrameId.current = requestAnimationFrame(loop);
@@ -338,7 +342,7 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
     const newIndex = Math.max(0, state.wordIndex - REWIND_COUNT);
     state.wordIndex = newIndex;
     setWordIndex(newIndex);
-    
+
     // Save progress
     onUpdateProgress(book.id, newIndex);
     setIsPlaying(false);
@@ -347,32 +351,32 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
   const startPlayback = (clientX: number, clientY: number) => {
     const state = engine.current;
     if (state.wordIndex >= words.length - 1) {
-        state.wordIndex = 0;
-        setWordIndex(0);
+      state.wordIndex = 0;
+      setWordIndex(0);
     }
 
     state.isPlaying = true;
     state.startTime = performance.now();
     state.lastFrameTime = performance.now();
     state.accumulatedTime = 0;
-    
+
     // Reset Auto-Rev state
-    state.dragStartWPM = state.targetWPM; 
-    
+    state.dragStartWPM = state.targetWPM;
+
     dragRef.current = {
       startX: clientX,
       startY: clientY,
       startWPM: state.targetWPM,
       startFontSize: fontSize
     };
-    
+
     setIsPlaying(true);
   };
 
   const dragRef = useRef<{ startX: number; startY: number; startWPM: number; startFontSize: number } | null>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (showSettings) return; 
+    if (showSettings) return;
     e.preventDefault();
     if (settings.deadman) {
       startPlayback(e.clientX, e.clientY);
@@ -384,7 +388,7 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
 
   const handlePointerUp = () => {
     if (settings.deadman) stopPlayback();
-    
+
     // End dragging logic
     const state = engine.current;
     state.isDragging = false;
@@ -401,7 +405,7 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
 
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
-    
+
     // WPM Logic
     // Sensitivity: 2px = 1 WPM
     let newWPM = dragRef.current.startWPM + (dx * 2);
@@ -416,15 +420,15 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
 
     // LOGIC: If we are speeding up (Right Drag), we commit that to the "Cruise Control" (dragStartWPM)
     // If we are slowing down (Left Drag), we only change targetWPM temporarily (Elastic)
-    
+
     if (newWPM > dragRef.current.startWPM) {
-        // Accelerating: Permanent change
-        state.targetWPM = Math.round(newWPM);
-        state.dragStartWPM = state.targetWPM; // Update the cruise setpoint
+      // Accelerating: Permanent change
+      state.targetWPM = Math.round(newWPM);
+      state.dragStartWPM = state.targetWPM; // Update the cruise setpoint
     } else {
-        // Braking: Temporary change
-        state.targetWPM = Math.round(newWPM);
-        // Do NOT update dragStartWPM, so it knows where to return to
+      // Braking: Temporary change
+      state.targetWPM = Math.round(newWPM);
+      // Do NOT update dragStartWPM, so it knows where to return to
     }
   };
 
@@ -432,24 +436,23 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
 
   const renderWord = (word: string, index: number, isFocused: boolean = true) => {
     if (!word) return null;
-    let mainColor = "text-white";
+    let mainColor = "text-stone-900"; // Dark Ink
     let glow = "";
 
     if (settings.fixation && isFocused) {
-        const isCapitalized = /^[A-Z]/.test(word);
-        if (isCapitalized && index > 0) {
-            const prevWord = words[index - 1];
-            if (!/[.?!]$/.test(prevWord)) {
-                mainColor = "text-cyan-400";
-                glow = "drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]";
-            }
+      const isCapitalized = /^[A-Z]/.test(word);
+      if (isCapitalized && index > 0) {
+        const prevWord = words[index - 1];
+        if (!/[.?!]$/.test(prevWord)) {
+          mainColor = "text-cyan-600"; // Slightly darker cyan for print feel
+          glow = ""; // No glow on paper
         }
+      }
     }
 
     // Only apply fixation splitting if focused
     if (!settings.fixation || !isFocused) {
-        // Simple render for context words (or if fixation disabled)
-        return <span className={`${mainColor} font-medium tracking-tight ${!isFocused ? 'opacity-60' : ''}`}>{word}</span>;
+      return <span className={`${mainColor} font-serif tracking-tight ${!isFocused ? 'opacity-40' : ''}`}>{word}</span>;
     }
 
     const splitIndex = Math.ceil(word.length / 2);
@@ -457,9 +460,9 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
     const lightPart = word.slice(splitIndex);
 
     return (
-      <span className={`inline-block tracking-normal ${glow} transition-all duration-200`}>
-        <span className={`${mainColor} font-extrabold`}>{boldPart}</span>
-        <span className={`${mainColor} font-light opacity-60`}>{lightPart}</span>
+      <span className={`inline-block tracking-normal ${glow} transition-all duration-200 font-serif`}>
+        <span className={`${mainColor} font-black`}>{boldPart}</span>
+        <span className={`${mainColor} font-medium opacity-80`}>{lightPart}</span>
       </span>
     );
   };
@@ -467,180 +470,173 @@ const ReaderView = ({ book, words, settings, setSettings, onBack, onUpdateProgre
   const progress = (wordIndex / words.length) * 100;
 
   return (
-    <div 
-      className="relative w-full h-screen bg-[#050505] text-white overflow-hidden select-none touch-none"
+    <div
+      className="relative w-full h-screen bg-[#f9f7f1] text-stone-900 overflow-hidden select-none touch-none"
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onPointerMove={handlePointerMove}
     >
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/10 via-black to-cyan-900/10 animate-pulse-slow pointer-events-none" />
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay" />
+      {/* Paper Texture & Grain */}
+      <div className="absolute inset-0 bg-[#e3e0d0] opacity-10 pointer-events-none" />
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-40 pointer-events-none mix-blend-multiply" />
 
-      {/* Header Controls (Responsive to Southpaw) */}
+      {/* Subtle Vignette */}
+      <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-stone-400/20 pointer-events-none" />
+
+      {/* Header Controls */}
       <div className={`absolute top-0 w-full z-50 p-6 flex ${settings.southpaw ? 'flex-row-reverse' : 'flex-row'} justify-between items-start pointer-events-none`}>
-         <button 
-           className="pointer-events-auto group px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all backdrop-blur-2xl border border-white/10 hover:border-white/30 flex items-center gap-2"
-           onClick={(e) => { e.stopPropagation(); onBack(); }}
-         >
-            {settings.southpaw ? null : <ChevronLeft className="w-5 h-5" />}
-            <span className="text-xs font-mono uppercase tracking-widest hidden sm:inline">Vault</span>
-            {settings.southpaw ? <ChevronLeft className="w-5 h-5 rotate-180" /> : null}
-         </button>
+        <button
+          className="pointer-events-auto group px-4 py-2 rounded-full bg-stone-900/5 hover:bg-stone-900/10 text-stone-600 hover:text-stone-900 transition-all border border-stone-900/5 hover:border-stone-900/20 flex items-center gap-2"
+          onClick={(e) => { e.stopPropagation(); onBack(); }}
+        >
+          {settings.southpaw ? null : <ChevronLeft className="w-5 h-5" />}
+          <span className="text-xs font-serif italic tracking-widest hidden sm:inline">Library</span>
+          {settings.southpaw ? <ChevronLeft className="w-5 h-5 rotate-180" /> : null}
+        </button>
 
-         <button 
-            className="pointer-events-auto p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all backdrop-blur-2xl border border-white/10 hover:border-white/30"
-            onClick={(e) => { e.stopPropagation(); setShowSettings(true); }}
-            onPointerDown={(e) => e.stopPropagation()} 
-         >
-            <Settings className="w-6 h-6" />
-         </button>
+        <button
+          className="pointer-events-auto p-3 rounded-full bg-stone-900/5 hover:bg-stone-900/10 text-stone-600 hover:text-stone-900 transition-all border border-stone-900/5 hover:border-stone-900/20"
+          onClick={(e) => { e.stopPropagation(); setShowSettings(true); }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <Settings className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Reticle & Word Ticker */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {/* Horizontal Line */}
-        <div className="absolute w-full max-w-3xl h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        
+        {/* Horizontal Guide Line (Subtle Pencil Line) */}
+        <div className="absolute w-full max-w-3xl h-px bg-stone-900/5" />
+
         {/* Vertical Notch (Center) */}
-        <div className="absolute h-8 w-px bg-white/20 top-1/2 -translate-y-1/2" />
-        
-        {/* Fixation Indicator */}
-        <div className={`absolute h-16 w-1 rounded-full top-1/2 -translate-y-1/2 transition-colors duration-500 ${isBraking ? 'bg-amber-500/50 blur-sm' : 'bg-red-500/20 blur-[1px]'}`} />
+        <div className="absolute h-4 w-px bg-stone-900/10 top-1/2 -translate-y-1/2" />
+
+        {/* Focus Highlight (Subtle Highlight Marker) */}
+        <div className={`absolute h-12 w-1 rounded-full top-1/2 -translate-y-1/2 transition-colors duration-500 ${isBraking ? 'bg-amber-400/30' : 'bg-transparent'}`} />
 
         <div className="relative z-10 w-full flex items-center justify-center gap-8 md:gap-16 px-4">
-            {[-2, -1, 0, 1, 2].map(offset => {
-                const idx = wordIndex + offset;
-                const isCenter = offset === 0;
-                // Spacer for out of bounds
-                if (idx < 0 || idx >= words.length) return <div key={`spacer-${offset}`} className="w-12 h-1 invisible">Spacer</div>;
-                
-                const word = words[idx];
-                
-                // Dynamic styles for the ticker effect
-                // Center: Big, Opaque. Neighbors: Smaller, faded.
-                // We use em/rem relative to base fontSize
-                let scale = isCenter ? 1 : 0.5;
-                if (Math.abs(offset) === 1) scale = 0.65;
-                
-                let opacity = isCenter ? 1 : 0.3;
-                if (Math.abs(offset) === 1) opacity = 0.5;
-                
-                const blur = isCenter ? 'blur-0' : 'blur-[0.5px]';
+          {[-2, -1, 0, 1, 2].map(offset => {
+            const idx = wordIndex + offset;
+            const isCenter = offset === 0;
+            // Spacer for out of bounds
+            if (idx < 0 || idx >= words.length) return <div key={`spacer-${offset}`} className="w-12 h-1 invisible">Space</div>;
 
-                return (
-                    <div 
-                        key={`${idx}-${word}`} // Unique key ensures React replaces the slot, effectively "Moving" the word if we had layout anims, but here creates a stable slot update
-                        className={`transition-all duration-150 ease-out flex items-center justify-center ${blur}`}
-                        style={{ 
-                            fontSize: `${fontSize * scale}px`,
-                            opacity: opacity,
-                            transform: `scale(${scale})`, // Redundant but safe
-                        }}
-                    >
-                        {renderWord(word, idx, isCenter)}
-                    </div>
-                );
-            })}
+            const word = words[idx];
+
+            // Ticker Logic: Paperback Flow
+            // Less aggressive scaling for a "reading line" feel
+            let scale = isCenter ? 1 : 0.85; // Flattens the curve
+            let opacity = isCenter ? 1 : 0.4;
+
+            return (
+              <div
+                key={`${idx}-${word}`}
+                className={`transition-all duration-200 ease-out flex items-center justify-center`}
+                style={{
+                  fontSize: `${fontSize * scale}px`,
+                  opacity: opacity,
+                }}
+              >
+                {renderWord(word, idx, isCenter)}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* HUD Stats */}
       <div className={`absolute top-24 sm:top-8 ${settings.southpaw ? 'right-6 text-right' : 'left-6 text-left'} pointer-events-none transition-all duration-300 ${isPlaying ? 'opacity-100' : 'opacity-40'}`}>
-        <div className="flex flex-col gap-1">
-             <div className="flex items-center gap-2 mb-1">
-                {isBraking ? (
-                    <AlertCircle className="w-3 h-3 text-amber-500 animate-pulse" />
-                ) : (
-                    <Zap className="w-3 h-3 text-cyan-500" />
-                )}
-                <span className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em]">
-                    {isBraking ? 'MANUAL OVR' : 'CRUISE CTRL'}
-                </span>
-             </div>
-             <span className={`text-4xl font-mono font-bold tracking-tighter tabular-nums transition-colors duration-300 ${isBraking ? 'text-amber-400' : 'text-white'}`}>
-                {displayWPM}
-             </span>
-             <span className="text-xs font-mono text-white/30">WPM</span>
+        <div className="flex flex-col gap-1 text-stone-900">
+          <div className="flex items-center gap-2 mb-1 justify-end sm:justify-start">
+            <div className={`w-2 h-2 rounded-full ${isBraking ? 'bg-amber-500' : 'bg-stone-400'}`} />
+            <span className="text-[10px] font-serif italic text-stone-400">
+              {isBraking ? 'Speed Adjusted' : 'Cruising'}
+            </span>
+          </div>
+          <span className={`text-4xl font-serif font-bold tracking-tighter tabular-nums transition-colors duration-300 ${isBraking ? 'text-amber-600' : 'text-stone-900'}`}>
+            {displayWPM}
+          </span>
+          <span className="text-xs font-serif italic text-stone-400">wpm</span>
         </div>
       </div>
 
       {/* Deadman Hint */}
       {!isPlaying && !showSettings && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="mt-64 flex flex-col items-center gap-4 opacity-40 animate-pulse-slow">
-                <MousePointer2 className="w-6 h-6 text-white/40" />
-                <span className="text-xs font-mono tracking-[0.3em] text-white/30 uppercase">
-                  {settings.deadman ? "Hold to Engage" : "Tap to Start"}
-                </span>
-            </div>
+          <div className="mt-64 flex flex-col items-center gap-4 opacity-40 animate-pulse-slow">
+            <MousePointer2 className="w-6 h-6 text-stone-400" />
+            <span className="text-xs font-serif italic text-stone-400">
+              {settings.deadman ? "Touch & Hold to Read" : "Tap to Begin"}
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Progress Bar */}
+      {/* Progress Bar (Ink Style) */}
       <div className="absolute bottom-10 left-8 right-8 pointer-events-none">
-        <div className="flex justify-between text-[10px] font-mono text-white/30 mb-3 uppercase tracking-widest">
-            <span className="truncate max-w-[200px] opacity-70">{book.title}</span>
-            <span className="tabular-nums">{Math.floor(progress)}%</span>
+        <div className="flex justify-between text-[11px] font-serif text-stone-400 mb-3 tracking-widest">
+          <span className="truncate max-w-[200px] text-stone-600 italic">{book.title}</span>
+          <span className="tabular-nums font-bold text-stone-600">{Math.floor(progress)}%</span>
         </div>
-        <div className="h-[2px] w-full bg-white/5 rounded-full overflow-hidden backdrop-blur-sm">
-            <div 
-                className={`h-full transition-all duration-100 ease-linear shadow-[0_0_10px_rgba(255,255,255,0.5)] ${isBraking ? 'bg-amber-500' : 'bg-white'}`}
-                style={{ width: `${progress}%` }}
-            />
+        <div className="h-[3px] w-full bg-stone-900/5 rounded-full overflow-hidden">
+          <div
+            className={`h-full transition-all duration-100 ease-linear ${isBraking ? 'bg-amber-500' : 'bg-stone-800'}`}
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
 
-      {/* Settings Modal */}
+      {/* Settings Modal (Light Theme) */}
       {showSettings && (
-        <div 
-          className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-2xl p-6"
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-stone-900/20 backdrop-blur-sm p-6"
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="w-full max-w-md bg-[#111]/90 border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-white/5 pointer-events-none" />
-            
-            <div className="relative z-10 flex items-center justify-between mb-8">
-                <h2 className="text-xl font-bold font-mono uppercase tracking-widest text-white">Config</h2>
-                <button 
-                  onClick={() => setShowSettings(false)}
-                  className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors border border-white/5"
-                >
-                  <X className="w-5 h-5 text-white/60" />
-                </button>
+          <div className="w-full max-w-md bg-[#fcfbf9] border border-stone-200 rounded-sm shadow-xl p-8 relative overflow-hidden">
+            {/* Spine accent */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-800/80" />
+
+            <div className="relative z-10 flex items-center justify-between mb-8 pl-4">
+              <h2 className="text-2xl font-serif font-bold text-stone-900">Preferences</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-stone-500" />
+              </button>
             </div>
-            
-            <div className="relative z-10 space-y-1">
-              <Toggle 
-                label="Cadence Mode" 
-                subLabel="Modulates rhythm based on punctuation."
-                value={settings.cadence} 
-                onChange={() => setSettings(s => ({ ...s, cadence: !s.cadence }))} 
+
+            <div className="relative z-10 space-y-1 pl-4">
+              <Toggle
+                label="Cadence Mode"
+                subLabel="Slows for punctuation."
+                value={settings.cadence}
+                onChange={() => setSettings(s => ({ ...s, cadence: !s.cadence }))}
               />
-              <Toggle 
-                label="Fixation Anchors" 
-                subLabel="Highlights optimal character for focus."
-                value={settings.fixation} 
-                onChange={() => setSettings(s => ({ ...s, fixation: !s.fixation }))} 
+              <Toggle
+                label="Fixation Anchor"
+                subLabel="Bold leads for focus."
+                value={settings.fixation}
+                onChange={() => setSettings(s => ({ ...s, fixation: !s.fixation }))}
               />
-              <Toggle 
-                label="Auto-Rev Engine" 
-                subLabel="Slows for difficult parts, auto-accelerates back."
-                value={settings.autoRev} 
-                onChange={() => setSettings(s => ({ ...s, autoRev: !s.autoRev }))} 
+              <Toggle
+                label="Auto-Rev Engine"
+                subLabel="Adaptive speed control."
+                value={settings.autoRev}
+                onChange={() => setSettings(s => ({ ...s, autoRev: !s.autoRev }))}
               />
-              <Toggle 
-                label="Deadman Switch" 
-                subLabel="Safety mechanism. Hold to read, lift to stop."
-                value={settings.deadman} 
-                onChange={() => setSettings(s => ({ ...s, deadman: !s.deadman }))} 
+              <Toggle
+                label="Deadman Switch"
+                subLabel="Hold to read interaction."
+                value={settings.deadman}
+                onChange={() => setSettings(s => ({ ...s, deadman: !s.deadman }))}
               />
-              <Toggle 
-                label="Southpaw Mode" 
-                subLabel="Optimizes interface for left-hand usage."
-                value={settings.southpaw} 
-                onChange={() => setSettings(s => ({ ...s, southpaw: !s.southpaw }))} 
+              <Toggle
+                label="Southpaw Mode"
+                subLabel="Left-handed interface."
+                value={settings.southpaw}
+                onChange={() => setSettings(s => ({ ...s, southpaw: !s.southpaw }))}
               />
             </div>
           </div>
@@ -669,91 +665,96 @@ const LibraryView = ({ books, onSelect, onImport, onDelete }: LibraryProps) => {
   };
 
   return (
-    <div 
-      className="min-h-screen bg-[#050505] text-white p-6 md:p-12 font-sans pb-32"
+    <div
+      className="min-h-screen bg-[#f9f7f1] text-stone-900 p-6 md:p-12 font-serif pb-32"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <header className="flex justify-between items-end mb-16 border-b border-white/5 pb-6">
+      {/* Paper Texture */}
+      <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-40 pointer-events-none mix-blend-multiply" />
+      <div className="fixed inset-0 bg-stone-500/5 pointer-events-none" />
+
+      <header className="relative z-10 flex justify-between items-end mb-16 border-b-2 border-stone-900/10 pb-6">
         <div>
-           <h1 className="text-4xl font-black tracking-tighter mb-2 text-transparent bg-clip-text bg-gradient-to-br from-white to-white/40">VAULT</h1>
-           <p className="text-white/40 text-[10px] font-mono uppercase tracking-[0.3em]">Secure Storage // Local Only</p>
+          <h1 className="text-5xl font-black tracking-tight mb-2 text-stone-900">Library</h1>
+          <p className="text-stone-500 text-xs font-serif italic tracking-widest">Local Storage // Synesthesia</p>
         </div>
-        <button 
+        <button
           onClick={() => fileInputRef.current?.click()}
-          className="group flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all hover:border-white/20 active:scale-95"
+          className="group flex items-center gap-2 px-6 py-3 rounded-full bg-stone-900 hover:bg-stone-800 text-[#f9f7f1] transition-all shadow-lg hover:shadow-xl active:scale-95"
         >
-          <Plus className="w-4 h-4 text-white/70 group-hover:text-cyan-400 transition-colors" />
-          <span className="text-xs font-bold tracking-widest uppercase">Add Book</span>
+          <Plus className="w-4 h-4 text-stone-300 group-hover:text-white transition-colors" />
+          <span className="text-xs font-bold tracking-widest uppercase">Add Text</span>
         </button>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
           accept=".txt,.md,.epub"
           onChange={(e) => e.target.files && onImport(e.target.files)}
         />
       </header>
 
       {books.length === 0 ? (
-        <div 
-            className="flex flex-col items-center justify-center h-[40vh] border border-dashed border-white/10 rounded-3xl bg-white/[0.02] p-8 text-center hover:bg-white/[0.04] transition-colors cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
+        <div
+          className="relative z-10 flex flex-col items-center justify-center h-[40vh] border-2 border-dashed border-stone-300 rounded-lg bg-white/50 p-8 text-center hover:bg-white/80 transition-colors cursor-pointer"
+          onClick={() => fileInputRef.current?.click()}
         >
-            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6">
-                <BookOpen className="w-8 h-8 text-white/20" />
-            </div>
-            <p className="text-xl font-bold text-white/60 mb-2">Vault Empty</p>
-            <p className="text-sm text-white/30 max-w-xs leading-relaxed">
-                Drag and drop EPUB or TXT files here, or tap above to initialize.
-            </p>
+          <div className="w-16 h-16 rounded-full bg-stone-200 flex items-center justify-center mb-6">
+            <BookOpen className="w-8 h-8 text-stone-500" />
+          </div>
+          <p className="text-xl font-bold text-stone-700 mb-2 font-serif">Vault Empty</p>
+          <p className="text-sm text-stone-500 max-w-xs leading-relaxed italic">
+            Drag and drop EPUB or TXT files here to begin reading.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {books.map(book => {
             const progress = Math.round((book.progressIndex / book.wordCount) * 100) || 0;
             const gradient = book.themeColor || getRandomGradient(book.id);
-            
+
             return (
-              <div 
+              <div
                 key={book.id}
                 onClick={() => onSelect(book)}
-                className="group relative bg-white/5 backdrop-blur-sm border border-white/5 rounded-3xl p-6 hover:border-white/20 transition-all cursor-pointer hover:bg-white/10 hover:shadow-2xl hover:scale-[1.02] flex flex-col justify-between h-[280px]"
+                className="group relative bg-white border border-stone-200 rounded-sm p-8 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col justify-between h-[320px] overflow-hidden"
               >
-                 <div className={`absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-20 transition-opacity bg-gradient-to-br ${gradient} pointer-events-none`} />
-                 
-                 <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${gradient} border border-white/10 flex items-center justify-center shadow-inner`}>
-                            <span className="font-mono text-[10px] font-bold text-white/70">TXT</span>
-                        </div>
-                        <button 
-                            className="p-3 -mr-3 -mt-3 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all text-white/20 hover:bg-white/10 rounded-full"
-                            onClick={(e) => { e.stopPropagation(); onDelete(book.id); }}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    </div>
-                    <h3 className="text-xl font-bold leading-tight line-clamp-3 text-gray-200 group-hover:text-white transition-colors mb-2">
-                        {book.title}
-                    </h3>
-                    <p className="text-[10px] uppercase tracking-widest text-white/40 font-mono">
-                        {(book.wordCount / 1000).toFixed(1)}k words
-                    </p>
-                 </div>
+                {/* Book Spine Effect */}
+                <div className="absolute left-0 top-0 bottom-0 w-2 bg-stone-900/5 group-hover:bg-red-800 transition-colors" />
 
-                 <div className="relative z-10 mt-6">
-                    <div className="flex justify-between text-[10px] font-mono uppercase tracking-widest text-white/30 mb-2">
-                        <span>Read</span>
-                        <span>{progress}%</span>
+                <div className="relative z-10 pl-4">
+                  <div className="flex justify-between items-start mb-8">
+                    <div className={`w-12 h-12 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center`}>
+                      <span className="font-serif italic text-xs font-bold text-stone-500">Vol.</span>
                     </div>
-                    <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                        <div 
-                            className="h-full bg-cyan-500/80 group-hover:bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.4)] transition-all duration-500" 
-                            style={{ width: `${progress}%` }} 
-                        />
-                    </div>
-                 </div>
+                    <button
+                      className="p-3 -mr-3 -mt-3 opacity-0 group-hover:opacity-100 hover:text-red-600 transition-all text-stone-300 hover:bg-stone-50 rounded-full"
+                      onClick={(e) => { e.stopPropagation(); onDelete(book.id); }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <h3 className="text-2xl font-serif font-bold leading-tight line-clamp-3 text-stone-900 mb-2 selection:bg-stone-200">
+                    {book.title}
+                  </h3>
+                  <p className="text-[10px] uppercase tracking-widest text-stone-400 font-sans font-bold">
+                    {(book.wordCount / 1000).toFixed(1)}k words
+                  </p>
+                </div>
+
+                <div className="relative z-10 mt-6 pl-4">
+                  <div className="flex justify-between text-[10px] font-serif italic text-stone-400 mb-2">
+                    <span>Progress</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="h-1 w-full bg-stone-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-stone-900 group-hover:bg-red-800 transition-colors duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -771,7 +772,7 @@ export default function App() {
   const [activeBookId, setActiveBookId] = useState<string | null>(null);
   const [activeWords, setActiveWords] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // App-Wide Settings
   const [settings, setSettings] = useState<AppSettings>({
     cadence: true,
@@ -784,39 +785,39 @@ export default function App() {
   // Load Settings & Library
   useEffect(() => {
     const init = async () => {
-        try {
-            // Load Settings
-            const savedSettings = await db.get<AppSettings>('user_settings');
-            if (savedSettings) setSettings(savedSettings);
+      try {
+        // Load Settings
+        const savedSettings = await db.get<AppSettings>('user_settings');
+        if (savedSettings) setSettings(savedSettings);
 
-            // Check Onboarding
-            const hasVisited = await db.get<boolean>('has_visited');
-            if (!hasVisited) setView('ONBOARDING');
+        // Check Onboarding
+        const hasVisited = await db.get<boolean>('has_visited');
+        if (!hasVisited) setView('ONBOARDING');
 
-            // Load Library
-            const storedLib = await db.get<BookMeta[]>('library');
-            if (storedLib) setLibrary(storedLib);
-            
-            // Default Book
-            if (!storedLib || storedLib.length === 0) {
-                const demoWords = cleanText(DEMO_TEXT);
-                const demoBook: BookMeta = {
-                    id: 'demo',
-                    title: 'Neuromancer (Excerpt)',
-                    wordCount: demoWords.length,
-                    progressIndex: 0,
-                    dateAdded: Date.now(),
-                    themeColor: 'from-cyan-900 to-slate-900'
-                };
-                await db.set('library', [demoBook]);
-                await db.set('content_demo', demoWords);
-                setLibrary([demoBook]);
-            }
-        } catch (e) {
-            console.error("Failed to load vault", e);
-        } finally {
-            setLoading(false);
+        // Load Library
+        const storedLib = await db.get<BookMeta[]>('library');
+        if (storedLib) setLibrary(storedLib);
+
+        // Default Book
+        if (!storedLib || storedLib.length === 0) {
+          const demoWords = cleanText(DEMO_TEXT);
+          const demoBook: BookMeta = {
+            id: 'demo',
+            title: 'Neuromancer (Excerpt)',
+            wordCount: demoWords.length,
+            progressIndex: 0,
+            dateAdded: Date.now(),
+            themeColor: 'from-cyan-900 to-slate-900'
+          };
+          await db.set('library', [demoBook]);
+          await db.set('content_demo', demoWords);
+          setLibrary([demoBook]);
         }
+      } catch (e) {
+        console.error("Failed to load vault", e);
+      } finally {
+        setLoading(false);
+      }
     };
     init();
   }, []);
@@ -824,7 +825,7 @@ export default function App() {
   // Save Settings on change
   useEffect(() => {
     if (!loading) {
-        db.set('user_settings', settings);
+      db.set('user_settings', settings);
     }
   }, [settings, loading]);
 
@@ -836,23 +837,23 @@ export default function App() {
   const handleImport = async (files: FileList) => {
     const newBooks: BookMeta[] = [...library];
     for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        try {
-            const { title, words } = await parseFile(file);
-            const id = `book_${Date.now()}_${i}`;
-            const meta: BookMeta = {
-                id,
-                title: title || 'Untitled',
-                wordCount: words.length,
-                progressIndex: 0,
-                dateAdded: Date.now(),
-                themeColor: getRandomGradient(id)
-            };
-            await db.set(`content_${id}`, words);
-            newBooks.push(meta);
-        } catch (e) {
-            console.error(`Failed to import ${file.name}`, e);
-        }
+      const file = files[i];
+      try {
+        const { title, words } = await parseFile(file);
+        const id = `book_${Date.now()}_${i}`;
+        const meta: BookMeta = {
+          id,
+          title: title || 'Untitled',
+          wordCount: words.length,
+          progressIndex: 0,
+          dateAdded: Date.now(),
+          themeColor: getRandomGradient(id)
+        };
+        await db.set(`content_${id}`, words);
+        newBooks.push(meta);
+      } catch (e) {
+        console.error(`Failed to import ${file.name}`, e);
+      }
     }
     await db.set('library', newBooks);
     setLibrary(newBooks);
@@ -868,50 +869,55 @@ export default function App() {
 
   const handleSelectBook = async (book: BookMeta) => {
     try {
-        const words = await db.get<string[]>(`content_${book.id}`);
-        if (words) {
-            setActiveWords(words);
-            setActiveBookId(book.id);
-            setView('READER');
-        } else {
-            alert("Error: Book content corrupted.");
-        }
+      const words = await db.get<string[]>(`content_${book.id}`);
+      if (words) {
+        setActiveWords(words);
+        setActiveBookId(book.id);
+        setView('READER');
+      } else {
+        alert("Error: Book content corrupted.");
+      }
     } catch (e) {
-        console.error("Error loading book content", e);
+      console.error("Error loading book content", e);
     }
   };
 
   const handleUpdateProgress = useCallback(async (id: string, index: number) => {
     setLibrary(prev => {
-        const next = prev.map(b => b.id === id ? { ...b, progressIndex: index } : b);
-        db.set('library', next).catch(e => console.error("Save failed", e));
-        return next;
+      const next = prev.map(b => b.id === id ? { ...b, progressIndex: index } : b);
+      db.set('library', next).catch(e => console.error("Save failed", e));
+      return next;
     });
   }, []);
 
-  if (loading) return <div className="bg-[#050505] h-screen w-full flex items-center justify-center text-white/20 font-mono tracking-widest animate-pulse">DECRYPTING VAULT...</div>;
+  if (loading) return (
+    <div className="bg-[#f9f7f1] h-screen w-full flex items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-40 pointer-events-none mix-blend-multiply" />
+      <span className="text-stone-400 font-serif italic tracking-widest animate-pulse relative z-10">OPENING VAULT...</span>
+    </div>
+  );
 
   return (
     <>
       {view === 'ONBOARDING' && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
-      
+
       {view === 'LIBRARY' && (
-        <LibraryView 
-            books={library} 
-            onSelect={handleSelectBook} 
-            onImport={handleImport} 
-            onDelete={handleDelete}
+        <LibraryView
+          books={library}
+          onSelect={handleSelectBook}
+          onImport={handleImport}
+          onDelete={handleDelete}
         />
       )}
-      
+
       {view === 'READER' && activeBookId && (
-        <ReaderView 
-            book={library.find(b => b.id === activeBookId)!} 
-            words={activeWords} 
-            settings={settings}
-            setSettings={setSettings}
-            onBack={() => setView('LIBRARY')}
-            onUpdateProgress={handleUpdateProgress}
+        <ReaderView
+          book={library.find(b => b.id === activeBookId)!}
+          words={activeWords}
+          settings={settings}
+          setSettings={setSettings}
+          onBack={() => setView('LIBRARY')}
+          onUpdateProgress={handleUpdateProgress}
         />
       )}
     </>
