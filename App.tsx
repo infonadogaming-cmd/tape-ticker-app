@@ -110,6 +110,73 @@ const parseFile = async (file: File): Promise<{ title: string; words: string[]; 
       const chapters: Chapter[] = [];
       const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
 
+      // 3. Parse TOC (NCX or EPUB 3 Nav)
+      // Strategy: Build a map of "Normalized Href" -> "Chapter Title"
+      const hrefToTitle: Record<string, string> = {};
+
+      try {
+        // Try to find TOC item
+        let tocId = spine.getAttribute("toc"); // EPUB 2 (NCX)
+        let tocHref = "";
+
+        if (tocId && manifestItems[tocId]) {
+          tocHref = manifestItems[tocId];
+        } else {
+          // EPUB 3: Check for properties="nav"
+          const navItem = Array.from(manifest.querySelectorAll("item")).find(i =>
+            i.getAttribute("properties")?.includes("nav")
+          );
+          if (navItem) {
+            tocHref = navItem.getAttribute("href") || "";
+          }
+        }
+
+        if (tocHref) {
+          const tocPath = opfDir + tocHref;
+          const tocZipPath = decodeURIComponent(tocPath);
+
+          // Find file
+          let tocData = await zip.file(tocZipPath)?.async("string");
+          if (!tocData) {
+            const foundObj = zip.file(new RegExp(tocZipPath.replace(/\//g, '\/'), 'i'))[0];
+            if (foundObj) tocData = await foundObj.async("string");
+          }
+
+          if (tocData) {
+            const tocDoc = parser.parseFromString(tocData, "text/xml"); // XML for NCX, HTML for Nav
+
+            // CASE A: NCX (EPUB 2)
+            if (tocHref.endsWith(".ncx")) {
+              const navPoints = tocDoc.querySelectorAll("navPoint");
+              navPoints.forEach(np => {
+                const label = np.querySelector("navLabel > text")?.textContent;
+                const content = np.querySelector("content")?.getAttribute("src");
+                if (label && content) {
+                  // Clean anchor hashes
+                  const cleanHref = content.split('#')[0];
+                  hrefToTitle[cleanHref] = label.trim();
+                }
+              });
+            }
+            // CASE B: EPUB 3 Nav (XHTML)
+            else {
+              const navDoc = parser.parseFromString(tocData, "text/html");
+              const navLinks = navDoc.querySelectorAll("nav[type='toc'] a"); // Standard EPUB 3 selector
+              navLinks.forEach(link => {
+                const label = link.textContent;
+                const href = link.getAttribute("href");
+                if (label && href) {
+                  const cleanHref = href.split('#')[0];
+                  hrefToTitle[cleanHref] = label.trim();
+                }
+              });
+            }
+          }
+        }
+      } catch (tocErr) {
+        console.warn("TOC Parse Warning", tocErr);
+      }
+
       const spineItems = Array.from(spine.querySelectorAll("itemref"));
 
       for (const itemRef of spineItems) {
@@ -138,10 +205,32 @@ const parseFile = async (file: File): Promise<{ title: string; words: string[]; 
         if (fileData) {
           const doc = parser.parseFromString(fileData, "text/html"); // Parsing as HTML handles XHTML well enough usually
 
-          // Extract Title - Prioritize Body Headings over Metadata Title
-          let chapterTitle = doc.querySelector("h1")?.textContent ||
-            doc.querySelector("h2")?.textContent ||
-            doc.querySelector("title")?.textContent;
+          // TITLING STRATEGY:
+          // 1. Check TOC Map (Most Authoritative) -> uses strict href match
+          // 2. Check Body Headers (H1-H2)
+          // 3. Fallback to Metadata Title
+
+          let chapterTitle = "";
+
+          // Try TOC match
+          if (hrefToTitle[href]) {
+            chapterTitle = hrefToTitle[href];
+          } else {
+            // Try purely filename match (less safe but covers structure diffs)
+            const fName = href.split('/').pop();
+            if (fName) {
+              // Check if any key ends with this filename
+              const fuzzyKey = Object.keys(hrefToTitle).find(k => k.endsWith(fName));
+              if (fuzzyKey) chapterTitle = hrefToTitle[fuzzyKey];
+            }
+          }
+
+          if (!chapterTitle) {
+            // Fallback to Heuristic
+            chapterTitle = doc.querySelector("h1")?.textContent ||
+              doc.querySelector("h2")?.textContent ||
+              doc.querySelector("title")?.textContent || "";
+          }
 
           if (!chapterTitle) chapterTitle = `Section ${chapters.length + 1}`;
 
