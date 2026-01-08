@@ -138,10 +138,10 @@ const parseFile = async (file: File): Promise<{ title: string; words: string[]; 
         if (fileData) {
           const doc = parser.parseFromString(fileData, "text/html"); // Parsing as HTML handles XHTML well enough usually
 
-          // Extract Title if possible
-          let chapterTitle = doc.querySelector("title")?.textContent ||
-            doc.querySelector("h1")?.textContent ||
-            doc.querySelector("h2")?.textContent;
+          // Extract Title - Prioritize Body Headings over Metadata Title
+          let chapterTitle = doc.querySelector("h1")?.textContent ||
+            doc.querySelector("h2")?.textContent ||
+            doc.querySelector("title")?.textContent;
 
           if (!chapterTitle) chapterTitle = `Section ${chapters.length + 1}`;
 
